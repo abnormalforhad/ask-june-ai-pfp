@@ -1,0 +1,25 @@
+/* App-level styles — custom overrides */
+
+.hover-white:hover {
+  color: var(--text-main) !important;
+}
+
+@media (max-width: 768px) {
+  .hero {
+    grid-template-columns: 1fr !important;
+    gap: 40px !important;
+    text-align: center;
+  }
+
+  .hero-content p {
+    margin-inline: auto;
+  }
+
+  .hero-content .btn {
+    width: 100%;
+  }
+
+  .nav-links {
+    display: none !important;
+  }
+}
