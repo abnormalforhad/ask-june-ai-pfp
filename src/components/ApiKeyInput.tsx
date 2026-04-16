@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Key, Check, X, ExternalLink, Eye, EyeOff } from 'lucide-react';
 import { getStoredApiKey, setStoredApiKey, clearStoredApiKey } from '../utils/juneApi';
 

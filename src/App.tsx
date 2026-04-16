@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Upload, Layers, Download } from 'lucide-react';
+import { Sparkles, Upload, Download } from 'lucide-react';
 import PfpModal from './components/PfpModal';
 import './index.css';
 

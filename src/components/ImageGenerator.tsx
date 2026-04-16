@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Sparkles, Wand2, Download, RefreshCw, Loader2, AlertCircle, ChevronDown, ImageIcon } from 'lucide-react';
+import { Sparkles, Wand2, Download, RefreshCw, Loader2, AlertCircle, ChevronDown } from 'lucide-react';
 import { generateImage } from '../utils/juneApi';
 
 interface ImageGeneratorProps {
