@@ -1,101 +1,176 @@
-import Dropzone from './components/Dropzone';
-import { Sparkles, Layers, Image as ImageIcon } from 'lucide-react';
-import './App.css';
+import { useState, useEffect } from 'react';
+import { Sparkles, Upload, Layers, Download } from 'lucide-react';
+import PfpModal from './components/PfpModal';
+import './index.css';
 
 function App() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <div className="app-container">
-      <nav className="navbar" style={{ borderBottom: '1px solid var(--card-border)', background: 'rgba(5, 13, 20, 0.8)', backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 50 }}>
-        <div className="container flex-center" style={{ justifyContent: 'space-between', padding: '20px 24px' }}>
-          <div className="logo" style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-             <div style={{ width: 28, height: 28, background: 'var(--accent)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000' }}>
-               <Sparkles size={16} />
-             </div>
-             Ask June <span className="text-accent">AI</span>
+    <>
+      <div className="app-bg" />
+
+      {/* ── Navbar ── */}
+      <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
+        <div className="container navbar-inner">
+          <div className="logo">
+            <div className="logo-icon">
+              <Sparkles size={18} />
+            </div>
+            Ask June AI
           </div>
-          <div className="nav-links" style={{ display: 'flex', gap: '32px', fontWeight: 500, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-            <a href="#" className="hover-white" style={{ transition: 'color 0.2s' }}>Docs</a>
-            <a href="#" className="hover-white" style={{ transition: 'color 0.2s' }}>Blog</a>
-            <a href="#" className="hover-white" style={{ transition: 'color 0.2s' }}>Hub</a>
-            <a href="#" className="text-main" style={{ color: 'var(--text-main)' }}>PFP Studio</a>
+          <div className="nav-pills">
+            <a href="https://askjune.ai/docs" target="_blank" rel="noopener noreferrer" className="nav-pill">Docs</a>
+            <a href="#" className="nav-pill">Blog</a>
+            <a href="#" className="nav-pill">Hub</a>
+            <button className="nav-pill active" onClick={() => setModalOpen(true)}>PFP Studio</button>
           </div>
         </div>
       </nav>
 
-      <main className="container" style={{ padding: '80px 24px', display: 'flex', flexDirection: 'column', gap: '120px' }}>
-        
-        {/* Hero Section */}
-        <section className="hero" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gap: '64px', alignItems: 'center' }}>
-          <div className="hero-content animate-fade-in">
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', background: 'rgba(0, 229, 255, 0.1)', border: '1px solid rgba(0, 229, 255, 0.2)', color: 'var(--accent)', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 600, marginBottom: '24px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              <Sparkles size={14} /> Official PFP Studio
+      {/* ── Hero ── */}
+      <section className="hero container">
+        <div>
+          <div className="hero-badge">
+            <div className="hero-badge-dot" />
+            PFP Generator
+          </div>
+          <h1 className="hero-title">
+            Create Your<br />
+            <span className="accent">Ask June AI</span><br />
+            PFP
+          </h1>
+          <p className="hero-desc">
+            Upload your photo and get an <strong>Ask June AI-branded overlay</strong> with
+            an <span className="accent-text">AI-generated tagline</span> powered by June's
+            inference engine. Download and rep the network.
+          </p>
+          <div className="hero-actions">
+            <button className="btn-primary" onClick={() => setModalOpen(true)}>
+              Generate My PFP
+            </button>
+            <a href="https://askjune.ai" target="_blank" rel="noopener noreferrer" className="btn-secondary">
+              Ask June AI Labs
+            </a>
+          </div>
+        </div>
+
+        <div>
+          <div className="sample-stack">
+            {/* Sample PFP cards stack */}
+            <div className="sample-card">
+              <div className="sample-card-inner">
+                <div className="sample-brand">
+                  <Sparkles size={14} style={{ color: 'var(--accent)' }} />
+                </div>
+                <div className="sample-badge">Neural Pioneer</div>
+                <svg className="sample-logo" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,229,255,0.15)" strokeWidth="2" />
+                  <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(0,229,255,0.1)" strokeWidth="1.5" />
+                  <circle cx="50" cy="50" r="10" fill="rgba(0,229,255,0.08)" />
+                  <line x1="10" y1="50" x2="90" y2="50" stroke="rgba(0,229,255,0.08)" strokeWidth="1" />
+                  <line x1="50" y1="10" x2="50" y2="90" stroke="rgba(0,229,255,0.08)" strokeWidth="1" />
+                </svg>
+              </div>
             </div>
-            <h1 style={{ fontSize: 'clamp(3rem, 5vw, 4.5rem)', fontWeight: 700, lineHeight: 1.1, marginBottom: '24px', letterSpacing: '-1px' }}>
-              Create Your <br/>
-              <span className="text-accent">Ask June AI</span> PFP
-            </h1>
-            <p className="text-muted" style={{ fontSize: '1.125rem', lineHeight: 1.6, marginBottom: '40px', maxWidth: '480px' }}>
-              Upload your photo and get an Ask June AI-branded overlay with an AI-generated tagline powered by our inference engine. Download and rep the network.
+            <div className="sample-card">
+              <div className="sample-card-inner">
+                <div className="sample-brand">
+                  <Sparkles size={14} style={{ color: 'var(--accent)' }} />
+                </div>
+                <div className="sample-badge">AI Architect</div>
+                <svg className="sample-logo" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,229,255,0.15)" strokeWidth="2" />
+                  <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(0,229,255,0.1)" strokeWidth="1.5" />
+                  <circle cx="50" cy="50" r="10" fill="rgba(0,229,255,0.08)" />
+                  <line x1="10" y1="50" x2="90" y2="50" stroke="rgba(0,229,255,0.08)" strokeWidth="1" />
+                  <line x1="50" y1="10" x2="50" y2="90" stroke="rgba(0,229,255,0.08)" strokeWidth="1" />
+                </svg>
+              </div>
+            </div>
+            <div className="sample-card">
+              <div className="sample-card-inner">
+                <div className="sample-brand">
+                  <Sparkles size={14} style={{ color: 'var(--accent)' }} />
+                </div>
+                <div className="sample-badge">Quantum Thinker</div>
+                <svg className="sample-logo" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,229,255,0.15)" strokeWidth="2" />
+                  <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(0,229,255,0.1)" strokeWidth="1.5" />
+                  <circle cx="50" cy="50" r="10" fill="rgba(0,229,255,0.08)" />
+                  <line x1="10" y1="50" x2="90" y2="50" stroke="rgba(0,229,255,0.08)" strokeWidth="1" />
+                  <line x1="50" y1="10" x2="50" y2="90" stroke="rgba(0,229,255,0.08)" strokeWidth="1" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div className="sample-label">Sample Outputs</div>
+        </div>
+      </section>
+
+      {/* ── How It Works ── */}
+      <section className="section container">
+        <h2 className="section-title">How It Works</h2>
+        <p className="section-subtitle">Three steps to your AI-branded profile picture</p>
+
+        <div className="steps-grid">
+          <div className="step-card">
+            <div className="step-number">
+              <Upload size={18} />
+            </div>
+            <h3 className="step-title">Upload Your Photo</h3>
+            <p className="step-desc">
+              Select any profile picture or avatar. Supports JPG, PNG, WEBP, and HEIC formats up to 10MB.
+              Your image is processed server-side and never stored permanently.
             </p>
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <button className="btn btn-primary" onClick={() => document.getElementById('dropzone')?.scrollIntoView({ behavior: 'smooth' })}>
-                Get Started
-              </button>
-              <button className="btn btn-ghost">Learn More</button>
-            </div>
           </div>
-          
-          <div className="hero-visual animate-fade-in" id="dropzone" style={{ animationDelay: '0.2s' }}>
-            <Dropzone />
+
+          <div className="step-card">
+            <div className="step-number">
+              <Sparkles size={18} />
+            </div>
+            <h3 className="step-title">AI Tagline & Overlay</h3>
+            <p className="step-desc">
+              Our backend calls June's AI inference engine to generate a unique tagline, then composites
+              a branded overlay onto your image with the Ask June AI identity.
+            </p>
           </div>
-        </section>
 
-        {/* How It Works Section */}
-        <section className="how-it-works" style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '16px', letterSpacing: '-0.5px' }}>How It Works</h2>
-          <p className="text-muted" style={{ marginBottom: '64px', fontSize: '1.125rem' }}>Three steps to your branded profile picture.</p>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px', textAlign: 'left' }}>
-            <div className="glass-panel" style={{ transition: 'transform 0.3s ease', cursor: 'default' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', color: 'var(--text-main)' }}>
-                <ImageIcon size={24} />
-              </div>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '16px', fontWeight: 600 }}>1. Upload Image</h3>
-              <p className="text-muted" style={{ lineHeight: 1.6, fontSize: '0.95rem' }}>Upload any profile picture or avatar. JPG, PNG, or WEBP up to 5MB. Your image is never stored permanently on our servers.</p>
+          <div className="step-card">
+            <div className="step-number">
+              <Download size={18} />
             </div>
-            
-            <div className="glass-panel" style={{ position: 'relative', overflow: 'hidden', transition: 'transform 0.3s ease', cursor: 'default' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-              <div style={{ position: 'absolute', top: 0, right: 0, width: '150px', height: '150px', background: 'rgba(0, 229, 255, 0.1)', filter: 'blur(50px)', borderRadius: '50%' }}></div>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(0, 229, 255, 0.1)', border: '1px solid rgba(0, 229, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', color: 'var(--accent)', position: 'relative' }}>
-                <Layers size={24} />
-              </div>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '16px', fontWeight: 600, position: 'relative' }}>2. AI Tagline & Overlay</h3>
-              <p className="text-muted" style={{ lineHeight: 1.6, fontSize: '0.95rem', position: 'relative' }}>A random sleek overlay is composited onto your image with a unique AI tagline generated via Ask June infrastructure.</p>
-            </div>
-            
-            <div className="glass-panel" style={{ transition: 'transform 0.3s ease', cursor: 'default' }} onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px', color: 'var(--text-main)' }}>
-                <Sparkles size={24} />
-              </div>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '16px', fontWeight: 600 }}>3. Download & Rep</h3>
-              <p className="text-muted" style={{ lineHeight: 1.6, fontSize: '0.95rem' }}>Download your high-resolution 1080x1080 PFP. Share it on X and other socials to represent the Ask June AI ecosystem.</p>
-            </div>
+            <h3 className="step-title">Download & Rep</h3>
+            <p className="step-desc">
+              Get your high-resolution 1080×1080 PFP ready for social media. Share it on X, Discord,
+              and beyond to represent the Ask June AI ecosystem.
+            </p>
           </div>
-        </section>
+        </div>
+      </section>
 
-      </main>
-
-      <footer style={{ padding: '48px 0', borderTop: '1px solid var(--card-border)', background: 'rgba(5, 13, 20, 0.5)', color: 'var(--text-muted)' }}>
-        <div className="container flex-center" style={{ justifyContent: 'space-between', fontSize: '0.9rem' }}>
+      {/* ── Footer ── */}
+      <footer className="footer">
+        <div className="container footer-inner">
           <span>© 2026 Ask June AI. All rights reserved.</span>
-          <div style={{ display: 'flex', gap: '24px' }}>
-            <a href="#" className="hover-white" style={{ transition: 'color 0.2s' }}>Discord</a>
-            <a href="#" className="hover-white" style={{ transition: 'color 0.2s' }}>X (Twitter)</a>
-            <a href="#" className="hover-white" style={{ transition: 'color 0.2s' }}>Blog</a>
+          <div className="footer-links">
+            <a href="#">Discord</a>
+            <a href="#">X (Twitter)</a>
+            <a href="https://askjune.ai" target="_blank" rel="noopener noreferrer">askjune.ai</a>
           </div>
         </div>
       </footer>
-    </div>
+
+      {/* ── Modal ── */}
+      <PfpModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
+    </>
   );
 }
 

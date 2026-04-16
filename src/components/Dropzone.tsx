@@ -1,10 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { UploadCloud, Loader2, Download, RefreshCw, Sparkles } from 'lucide-react';
+import { generateTagline } from '../utils/juneApi';
 
-export default function Dropzone() {
+interface DropzoneProps {
+  apiKey: string | null;
+}
+
+export default function Dropzone({ apiKey }: DropzoneProps) {
   const [isHovering, setIsHovering] = useState(false);
   const [file, setFile] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'processing' | 'done'>('idle');
+  const [tagline, setTagline] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -17,19 +23,46 @@ export default function Dropzone() {
     setIsHovering(false);
   };
 
-  const processFile = (selectedFile: File) => {
+  const processFile = async (selectedFile: File) => {
     if (!selectedFile.type.startsWith('image/')) return;
     
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       setFile(e.target?.result as string);
       setStatus('processing');
-      // Simulate Backend AI Processing
-      setTimeout(() => {
-        setStatus('done');
-      }, 2500);
+
+      // Use real AI tagline generation if API key is available
+      if (apiKey) {
+        try {
+          const aiTagline = await generateTagline(apiKey);
+          setTagline(aiTagline);
+        } catch (err) {
+          console.error('Tagline generation failed, using fallback:', err);
+          setTagline(getRandomTagline());
+        }
+      } else {
+        // Fallback: use a random tagline after short delay
+        await new Promise((r) => setTimeout(r, 1500));
+        setTagline(getRandomTagline());
+      }
+
+      setStatus('done');
     };
     reader.readAsDataURL(selectedFile);
+  };
+
+  const getRandomTagline = () => {
+    const taglines = [
+      'Visionary Intelligence Architect',
+      'Neural Frontier Explorer',
+      'Digital Consciousness Pioneer',
+      'Quantum Thought Leader',
+      'Synthetic Wisdom Creator',
+      'Infinite Cognition Seeker',
+      'Decentralized Mind Builder',
+      'Emergent AI Advocate',
+    ];
+    return taglines[Math.floor(Math.random() * taglines.length)];
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -47,7 +80,6 @@ export default function Dropzone() {
   };
 
   const handleDownload = () => {
-    // Basic download anchor behavior matching the preview
     const link = document.createElement('a');
     link.href = file || '';
     link.download = 'AskJuneAI_PFP.png';
@@ -57,6 +89,7 @@ export default function Dropzone() {
   const resetProcess = () => {
     setFile(null);
     setStatus('idle');
+    setTagline('');
   }
 
   return (
@@ -88,8 +121,42 @@ export default function Dropzone() {
             <UploadCloud size={32} className="text-accent" />
           </div>
           <h3 style={{ fontSize: '1.35rem', marginBottom: '8px', fontWeight: 600 }}>Select an Image</h3>
-          <p className="text-muted" style={{ marginBottom: '32px', fontSize: '0.95rem', maxWidth: '80%' }}>Drag & drop your Avatar or click to browse files.</p>
+          <p className="text-muted" style={{ marginBottom: '24px', fontSize: '0.95rem', maxWidth: '80%' }}>Drag & drop your Avatar or click to browse files.</p>
           
+          {apiKey ? (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              borderRadius: '99px',
+              background: 'rgba(0, 229, 255, 0.08)',
+              border: '1px solid rgba(0, 229, 255, 0.15)',
+              fontSize: '0.75rem',
+              color: 'var(--accent)',
+              fontWeight: 500,
+              marginBottom: '20px',
+            }}>
+              <Sparkles size={12} /> AI Tagline Enabled
+            </div>
+          ) : (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              borderRadius: '99px',
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              fontSize: '0.75rem',
+              color: 'var(--text-muted)',
+              fontWeight: 500,
+              marginBottom: '20px',
+            }}>
+              Using random taglines (add API key for AI)
+            </div>
+          )}
+
           <button className="btn btn-ghost" style={{ border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.03)' }} onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
             Browse Files
           </button>
@@ -108,14 +175,18 @@ export default function Dropzone() {
           <div className="processing-image-wrapper" style={{ position: 'relative', width: '220px', height: '220px', borderRadius: '24px', overflow: 'hidden', marginBottom: '40px', boxShadow: '0 0 40px rgba(0, 229, 255, 0.2)' }}>
             <img src={file!} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4, filter: 'blur(2px)' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(5, 13, 20, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Loader2 size={48} className="text-accent" style={{ animation: 'spin 1.5s linear infinite' }} />
+              <Loader2 size={48} className="text-accent spin-icon" />
             </div>
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '4px', background: 'rgba(255,255,255,0.1)' }}>
               <div style={{ height: '100%', width: '100%', background: 'var(--accent)', animation: 'progress 2.5s ease-in-out forwards', transformOrigin: 'left' }}></div>
             </div>
           </div>
-          <h3 style={{ fontSize: '1.35rem', marginBottom: '12px', fontWeight: 600 }}>AI Processing...</h3>
-          <p className="text-muted" style={{ fontSize: '0.95rem' }}>Generating intelligent tagline & composition.</p>
+          <h3 style={{ fontSize: '1.35rem', marginBottom: '12px', fontWeight: 600 }}>
+            {apiKey ? 'AI Processing...' : 'Processing...'}
+          </h3>
+          <p className="text-muted" style={{ fontSize: '0.95rem' }}>
+            {apiKey ? 'Generating intelligent tagline via June AI' : 'Creating your branded PFP composition'}
+          </p>
         </div>
       )}
 
@@ -147,7 +218,7 @@ export default function Dropzone() {
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '40px 24px 24px', background: 'linear-gradient(to top, rgba(5,13,20,0.95) 0%, rgba(5,13,20,0.7) 40%, transparent 100%)' }}>
                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)', padding: '8px 16px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 500, color: '#fff', border: '1px solid rgba(255,255,255,0.15)' }}>
                  <Sparkles size={14} className="text-accent" />
-                 "Visionary Intelligence Architect"
+                 "{tagline}"
                </div>
             </div>
           </div>
