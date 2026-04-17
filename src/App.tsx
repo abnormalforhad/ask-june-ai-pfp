@@ -1,16 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles, Pickaxe, AlertCircle } from 'lucide-react';
 import PhotoUpload from './components/PhotoUpload';
 import FashionGrid from './components/FashionGrid';
 import ResultDisplay from './components/ResultDisplay';
+import ApiKeyInput from './components/ApiKeyInput';
+import { generateClientPFP } from './utils/juneClientApi';
 import './index.css';
 
 function App() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [selectedFashionIds, setSelectedFashionIds] = useState<string[]>([]);
+  const [apiKey, setApiKey] = useState<string>('');
+  
   const [isGenerating, setIsGenerating] = useState(false);
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('JUNE_API_KEY');
+    if (stored) {
+      setApiKey(stored);
+    }
+  }, []);
 
   const handleToggleFashion = (id: string) => {
     setSelectedFashionIds((prev) => 
@@ -19,32 +30,17 @@ function App() {
   };
 
   const handleGenerate = async () => {
-    if (!photo || selectedFashionIds.length === 0) return;
+    if (!photo || selectedFashionIds.length === 0 || !apiKey) {
+      if (!apiKey) setError('Please enter your June AI API Key first.');
+      return;
+    }
     
     setIsGenerating(true);
     setError(null);
     setResultImage(null);
 
     try {
-      const response = await fetch('/api/generate-pfp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageBase64: photo,
-          selectedItems: selectedFashionIds
-        })
-      });
-
-      let data;
-      try {
-        data = await response.json();
-      } catch (e) {
-        throw new Error('Server error: API did not return valid JSON. If you are running locally, be sure to use "npx vercel dev" so the /api folder works, not just "npm run dev".');
-      }
-
-      if (!response.ok) {
-        throw new Error(data?.error || 'Failed to generate PFP');
-      }
+      const data = await generateClientPFP(apiKey, photo, selectedFashionIds);
 
       if (data.b64) {
         setResultImage(`data:image/png;base64,${data.b64}`);
@@ -155,16 +151,20 @@ function App() {
               />
             </div>
 
-            {/* Step 3: Generate Button */}
-            <div style={{ textAlign: 'center', marginTop: '20px' }}>
-              <button 
-                className="btn-primary" 
-                onClick={handleGenerate}
-                disabled={!photo || selectedFashionIds.length === 0 || isGenerating}
-                style={{ width: '100%', maxWidth: '320px', padding: '18px' }}
-              >
-                <Sparkles size={18} /> GENERATE PFP
-              </button>
+            {/* Step 3: API Key & Generate */}
+            <div style={{ opacity: selectedFashionIds.length > 0 ? 1 : 0.5, transition: 'opacity 0.3s' }}>
+              <ApiKeyInput apiKey={apiKey} setApiKey={setApiKey} />
+
+              <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                <button 
+                  className="btn-primary" 
+                  onClick={handleGenerate}
+                  disabled={!photo || selectedFashionIds.length === 0 || !apiKey || isGenerating}
+                  style={{ width: '100%', maxWidth: '320px', padding: '18px' }}
+                >
+                  <Sparkles size={18} /> GENERATE PFP
+                </button>
+              </div>
             </div>
 
           </div>

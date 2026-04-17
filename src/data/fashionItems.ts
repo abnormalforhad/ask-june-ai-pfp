@@ -41,3 +41,11 @@ export const FASHION_ITEMS: FashionItem[] = [
     thumbnail: '/fashion/cali-sweater.webp',
   },
 ];
+
+export const FASHION_PROMPTS: Record<string, string> = {
+  'dmooster-headphones': "wearing large off-white over-ear headphones with a bold red 'X' mark on the headband and 'DMOOSTER' text on the earcup",
+  'tge-sunglasses': "wearing futuristic thick black rectangular frame sunglasses with blue tinted lenses in a 'TGE COMING' stylized tech vibe",
+  'ny-cap': "wearing a classic black baseball cap with a white embroidered 'NY' logo on the front",
+  'cali-sweater': "wearing an oversized brown crewneck sweatshirt with bold white 'CALIFORNIA LOS ANGELES' arched text across the chest",
+};
+
