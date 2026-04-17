@@ -1,175 +1,188 @@
-import { useState, useEffect } from 'react';
-import { Sparkles, Upload, Download } from 'lucide-react';
-import PfpModal from './components/PfpModal';
+import { useState } from 'react';
+import { Sparkles, Pickaxe, AlertCircle } from 'lucide-react';
+import PhotoUpload from './components/PhotoUpload';
+import FashionGrid from './components/FashionGrid';
+import ResultDisplay from './components/ResultDisplay';
 import './index.css';
 
 function App() {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [selectedFashionIds, setSelectedFashionIds] = useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [resultImage, setResultImage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const handleToggleFashion = (id: string) => {
+    setSelectedFashionIds((prev) => 
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleGenerate = async () => {
+    if (!photo || selectedFashionIds.length === 0) return;
+    
+    setIsGenerating(true);
+    setError(null);
+    setResultImage(null);
+
+    try {
+      const response = await fetch('/api/generate-pfp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: photo,
+          selectedItems: selectedFashionIds
+        })
+      });
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error('Server error: API did not return valid JSON. If you are running locally, be sure to use "npx vercel dev" so the /api folder works, not just "npm run dev".');
+      }
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to generate PFP');
+      }
+
+      if (data.b64) {
+        setResultImage(`data:image/png;base64,${data.b64}`);
+      } else if (data.url) {
+        setResultImage(data.url);
+      } else {
+        throw new Error('No image returned from API');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const resetAll = () => {
+    setPhoto(null);
+    setSelectedFashionIds([]);
+    setResultImage(null);
+    setError(null);
+  };
 
   return (
     <>
-      <div className="app-bg" />
-
       {/* ── Navbar ── */}
-      <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
+      <nav className="navbar">
         <div className="container navbar-inner">
           <div className="logo">
             <div className="logo-icon">
-              <Sparkles size={18} />
+              <Sparkles size={20} />
             </div>
             Ask June AI
           </div>
           <div className="nav-pills">
-            <a href="https://askjune.ai/docs" target="_blank" rel="noopener noreferrer" className="nav-pill">Docs</a>
-            <a href="#" className="nav-pill">Blog</a>
-            <a href="#" className="nav-pill">Hub</a>
-            <button className="nav-pill active" onClick={() => setModalOpen(true)}>PFP Studio</button>
+            <a href="https://askjune.ai" target="_blank" rel="noopener noreferrer" className="nav-pill">Powered by June AI</a>
           </div>
         </div>
       </nav>
 
-      {/* ── Hero ── */}
-      <section className="hero container">
-        <div>
-          <div className="hero-badge">
-            <div className="hero-badge-dot" />
-            PFP Generator
-          </div>
-          <h1 className="hero-title">
-            Create Your<br />
-            <span className="accent">Ask June AI</span><br />
-            PFP
+      <main className="app-main container">
+        
+        {/* ── Hero ── */}
+        <div className="text-center" style={{ marginBottom: '60px' }}>
+          <div className="section-label">Fashion Studio</div>
+          <h1 className="title-main">
+            Upgrade Your PFP <br />
+            with <span className="gradient-text">AI Fashion</span>
           </h1>
-          <p className="hero-desc">
-            Upload your photo and get an <strong>Ask June AI-branded overlay</strong> with
-            an <span className="accent-text">AI-generated tagline</span> powered by June's
-            inference engine. Download and rep the network.
+          <p className="subtitle-main">
+            Upload your photo, select from our curated virtual wardrobe, and let Ask June AI seamlessly composite them onto your avatar while preserving your identity.
           </p>
-          <div className="hero-actions">
-            <button className="btn-primary" onClick={() => setModalOpen(true)}>
-              Generate My PFP
-            </button>
-            <a href="https://askjune.ai" target="_blank" rel="noopener noreferrer" className="btn-secondary">
-              Ask June AI Labs
-            </a>
-          </div>
         </div>
 
-        <div>
-          <div className="sample-stack">
-            {/* Sample PFP cards stack */}
-            <div className="sample-card">
-              <div className="sample-card-inner">
-                <div className="sample-brand">
-                  <Sparkles size={14} style={{ color: 'var(--accent)' }} />
+        {/* ── Main Flow ── */}
+        {!resultImage ? (
+          <div className="flow-container" style={{ position: 'relative' }}>
+            
+            {/* Loading Overlay */}
+            {isGenerating && (
+              <div className="processing-overlay">
+                <div className="loader-pulse">
+                  <Pickaxe size={28} />
                 </div>
-                <div className="sample-badge">Neural Pioneer</div>
-                <svg className="sample-logo" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,229,255,0.15)" strokeWidth="2" />
-                  <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(0,229,255,0.1)" strokeWidth="1.5" />
-                  <circle cx="50" cy="50" r="10" fill="rgba(0,229,255,0.08)" />
-                  <line x1="10" y1="50" x2="90" y2="50" stroke="rgba(0,229,255,0.08)" strokeWidth="1" />
-                  <line x1="50" y1="10" x2="50" y2="90" stroke="rgba(0,229,255,0.08)" strokeWidth="1" />
-                </svg>
-              </div>
-            </div>
-            <div className="sample-card">
-              <div className="sample-card-inner">
-                <div className="sample-brand">
-                  <Sparkles size={14} style={{ color: 'var(--accent)' }} />
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 600, marginBottom: '8px' }}>
+                  Stitching your fit...
+                </h3>
+                <p style={{ color: 'var(--text-secondary)' }}>
+                  June AI is mapping the garments to your avatar.
+                </p>
+                <div style={{ marginTop: '24px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  This can take 15-30 seconds.
                 </div>
-                <div className="sample-badge">AI Architect</div>
-                <svg className="sample-logo" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,229,255,0.15)" strokeWidth="2" />
-                  <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(0,229,255,0.1)" strokeWidth="1.5" />
-                  <circle cx="50" cy="50" r="10" fill="rgba(0,229,255,0.08)" />
-                  <line x1="10" y1="50" x2="90" y2="50" stroke="rgba(0,229,255,0.08)" strokeWidth="1" />
-                  <line x1="50" y1="10" x2="50" y2="90" stroke="rgba(0,229,255,0.08)" strokeWidth="1" />
-                </svg>
               </div>
-            </div>
-            <div className="sample-card">
-              <div className="sample-card-inner">
-                <div className="sample-brand">
-                  <Sparkles size={14} style={{ color: 'var(--accent)' }} />
-                </div>
-                <div className="sample-badge">Quantum Thinker</div>
-                <svg className="sample-logo" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,229,255,0.15)" strokeWidth="2" />
-                  <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(0,229,255,0.1)" strokeWidth="1.5" />
-                  <circle cx="50" cy="50" r="10" fill="rgba(0,229,255,0.08)" />
-                  <line x1="10" y1="50" x2="90" y2="50" stroke="rgba(0,229,255,0.08)" strokeWidth="1" />
-                  <line x1="50" y1="10" x2="50" y2="90" stroke="rgba(0,229,255,0.08)" strokeWidth="1" />
-                </svg>
+            )}
+
+            {/* Error Message */}
+            {error && (
+              <div style={{
+                background: 'rgba(255, 50, 100, 0.1)',
+                border: '1px solid rgba(255, 50, 100, 0.3)',
+                padding: '16px 24px',
+                borderRadius: '12px',
+                color: '#ff6b8b',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                marginBottom: '-16px'
+              }}>
+                <AlertCircle size={20} />
+                {error}
               </div>
-            </div>
-          </div>
-          <div className="sample-label">Sample Outputs</div>
-        </div>
-      </section>
+            )}
 
-      {/* ── How It Works ── */}
-      <section className="section container">
-        <h2 className="section-title">How It Works</h2>
-        <p className="section-subtitle">Three steps to your AI-branded profile picture</p>
+            {/* Step 1: Upload */}
+            <PhotoUpload 
+              selectedPhoto={photo} 
+              onPhotoSelected={setPhoto} 
+              onClear={() => setPhoto(null)} 
+            />
 
-        <div className="steps-grid">
-          <div className="step-card">
-            <div className="step-number">
-              <Upload size={18} />
+            {/* Step 2: Select Fashion (only enabled if photo uploaded) */}
+            <div style={{ opacity: photo ? 1 : 0.5, pointerEvents: photo && !isGenerating ? 'auto' : 'none', transition: 'opacity 0.3s' }}>
+              <FashionGrid 
+                selectedIds={selectedFashionIds}
+                onToggleItem={handleToggleFashion}
+                onClear={() => setSelectedFashionIds([])}
+              />
             </div>
-            <h3 className="step-title">Upload Your Photo</h3>
-            <p className="step-desc">
-              Select any profile picture or avatar. Supports JPG, PNG, WEBP, and HEIC formats up to 10MB.
-              Your image is processed server-side and never stored permanently.
-            </p>
-          </div>
 
-          <div className="step-card">
-            <div className="step-number">
-              <Sparkles size={18} />
+            {/* Step 3: Generate Button */}
+            <div style={{ textAlign: 'center', marginTop: '20px' }}>
+              <button 
+                className="btn-primary" 
+                onClick={handleGenerate}
+                disabled={!photo || selectedFashionIds.length === 0 || isGenerating}
+                style={{ width: '100%', maxWidth: '320px', padding: '18px' }}
+              >
+                <Sparkles size={18} /> GENERATE PFP
+              </button>
             </div>
-            <h3 className="step-title">AI Tagline & Overlay</h3>
-            <p className="step-desc">
-              Our backend calls June's AI inference engine to generate a unique tagline, then composites
-              a branded overlay onto your image with the Ask June AI identity.
-            </p>
-          </div>
 
-          <div className="step-card">
-            <div className="step-number">
-              <Download size={18} />
-            </div>
-            <h3 className="step-title">Download & Rep</h3>
-            <p className="step-desc">
-              Get your high-resolution 1080×1080 PFP ready for social media. Share it on X, Discord,
-              and beyond to represent the Ask June AI ecosystem.
-            </p>
           </div>
-        </div>
-      </section>
+        ) : (
+          <ResultDisplay 
+            imageUrl={resultImage} 
+            onReset={resetAll}
+          />
+        )}
+      </main>
 
       {/* ── Footer ── */}
-      <footer className="footer">
-        <div className="container footer-inner">
+      <footer style={{ borderTop: '1px solid var(--card-border)', padding: '32px 0', marginTop: '60px' }}>
+        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
           <span>© 2026 Ask June AI. All rights reserved.</span>
-          <div className="footer-links">
-            <a href="#">Discord</a>
-            <a href="#">X (Twitter)</a>
-            <a href="https://askjune.ai" target="_blank" rel="noopener noreferrer">askjune.ai</a>
-          </div>
+          <span>Powered by June AI Inference</span>
         </div>
       </footer>
-
-      {/* ── Modal ── */}
-      <PfpModal isOpen={modalOpen} onClose={() => setModalOpen(false)} />
     </>
   );
 }
