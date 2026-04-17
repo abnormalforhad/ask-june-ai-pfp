@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, Pickaxe, AlertCircle, RefreshCw } from 'lucide-react';
+import { Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
 import PhotoUpload from './components/PhotoUpload';
 import FashionGrid from './components/FashionGrid';
 import ResultDisplay from './components/ResultDisplay';
