@@ -1,27 +1,61 @@
-import { useState, useEffect } from 'react';
-import { Sparkles, Pickaxe, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Sparkles, Pickaxe, AlertCircle, RefreshCw } from 'lucide-react';
 import PhotoUpload from './components/PhotoUpload';
 import FashionGrid from './components/FashionGrid';
 import ResultDisplay from './components/ResultDisplay';
-import ApiKeyInput from './components/ApiKeyInput';
-import { generateClientPFP } from './utils/juneClientApi';
 import './index.css';
+
+/**
+ * Utility to drastically compress a base64 image (scales to max 512x512)
+ * This shrinks the payload to sneak past Cloudflare Datacenter WAF blocks.
+ */
+const compressImage = async (base64Str: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX_WIDTH = 512;
+      const MAX_HEIGHT = 512;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > MAX_WIDTH) {
+          height = Math.round((height *= MAX_WIDTH / width));
+          width = MAX_WIDTH;
+        }
+      } else {
+        if (height > MAX_HEIGHT) {
+          width = Math.round((width *= MAX_HEIGHT / height));
+          height = MAX_HEIGHT;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject('No canvas context');
+      
+      // Draw white background in case of PNG transparency
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Compress heavily (quality 0.82)
+      resolve(canvas.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = (err) => reject(err);
+  });
+};
 
 function App() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [selectedFashionIds, setSelectedFashionIds] = useState<string[]>([]);
-  const [apiKey, setApiKey] = useState<string>('');
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const stored = localStorage.getItem('JUNE_API_KEY');
-    if (stored) {
-      setApiKey(stored);
-    }
-  }, []);
 
   const handleToggleFashion = (id: string) => {
     setSelectedFashionIds((prev) => 
@@ -30,17 +64,35 @@ function App() {
   };
 
   const handleGenerate = async () => {
-    if (!photo || selectedFashionIds.length === 0 || !apiKey) {
-      if (!apiKey) setError('Please enter your June AI API Key first.');
-      return;
-    }
+    if (!photo || selectedFashionIds.length === 0) return;
     
     setIsGenerating(true);
     setError(null);
     setResultImage(null);
 
     try {
-      const data = await generateClientPFP(apiKey, photo, selectedFashionIds);
+      // Compress image before sending to backend to avoid Cloudflare WAF payload limits
+      const compressedBase64 = await compressImage(photo);
+
+      const response = await fetch('/api/generate-pfp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: compressedBase64,
+          selectedItems: selectedFashionIds
+        })
+      });
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error('Server error: API did not return valid JSON. Ensure Vercel environment is active.');
+      }
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to generate PFP');
+      }
 
       if (data.b64) {
         setResultImage(`data:image/png;base64,${data.b64}`);
@@ -84,11 +136,12 @@ function App() {
       <main className="app-main container">
         
         {/* ── Hero ── */}
-        <div className="text-center" style={{ marginBottom: '60px' }}>
+        <div className="hero-section">
           <div className="section-label">Fashion Studio</div>
           <h1 className="title-main">
-            Upgrade Your PFP <br />
-            with <span className="gradient-text">AI Fashion</span>
+            Upgrade Your Profile
+            <br />
+            with <span className="gradient-text">AI Fashion</span>.
           </h1>
           <p className="subtitle-main">
             Upload your photo, select from our curated virtual wardrobe, and let Ask June AI seamlessly composite them onto your avatar while preserving your identity.
@@ -103,66 +156,47 @@ function App() {
             {isGenerating && (
               <div className="processing-overlay">
                 <div className="loader-pulse">
-                  <Pickaxe size={28} />
+                  <RefreshCw size={28} className="spin-anim" />
                 </div>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: 600, marginBottom: '8px' }}>
-                  Stitching your fit...
-                </h3>
-                <p style={{ color: 'var(--text-secondary)' }}>
-                  June AI is mapping the garments to your avatar.
-                </p>
-                <div style={{ marginTop: '24px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  This can take 15-30 seconds.
-                </div>
+                <h3>Stitching your fit...</h3>
+                <p>June AI is securely mapping garments to your avatar.</p>
+                <div className="loading-hint">This usually takes 15-30 seconds.</div>
               </div>
             )}
 
             {/* Error Message */}
             {error && (
-              <div style={{
-                background: 'rgba(255, 50, 100, 0.1)',
-                border: '1px solid rgba(255, 50, 100, 0.3)',
-                padding: '16px 24px',
-                borderRadius: '12px',
-                color: '#ff6b8b',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                marginBottom: '-16px'
-              }}>
+              <div className="alert-error">
                 <AlertCircle size={20} />
                 {error}
               </div>
             )}
 
-            {/* Step 1: Upload */}
-            <PhotoUpload 
-              selectedPhoto={photo} 
-              onPhotoSelected={setPhoto} 
-              onClear={() => setPhoto(null)} 
-            />
-
-            {/* Step 2: Select Fashion (only enabled if photo uploaded) */}
-            <div style={{ opacity: photo ? 1 : 0.5, pointerEvents: photo && !isGenerating ? 'auto' : 'none', transition: 'opacity 0.3s' }}>
-              <FashionGrid 
-                selectedIds={selectedFashionIds}
-                onToggleItem={handleToggleFashion}
-                onClear={() => setSelectedFashionIds([])}
+            <div className="card">
+              {/* Step 1: Upload */}
+              <PhotoUpload 
+                selectedPhoto={photo} 
+                onPhotoSelected={setPhoto} 
+                onClear={() => setPhoto(null)} 
               />
-            </div>
+              <hr className="divider" />
+              {/* Step 2: Select Fashion (only enabled if photo uploaded) */}
+              <div className={photo ? "step-active" : "step-disabled"}>
+                <FashionGrid 
+                  selectedIds={selectedFashionIds}
+                  onToggleItem={handleToggleFashion}
+                  onClear={() => setSelectedFashionIds([])}
+                />
+              </div>
 
-            {/* Step 3: API Key & Generate */}
-            <div style={{ opacity: selectedFashionIds.length > 0 ? 1 : 0.5, transition: 'opacity 0.3s' }}>
-              <ApiKeyInput apiKey={apiKey} setApiKey={setApiKey} />
-
-              <div style={{ textAlign: 'center', marginTop: '20px' }}>
+              {/* Step 3: Generate Button */}
+              <div className={`generate-wrapper ${selectedFashionIds.length > 0 ? "step-active" : "step-disabled"}`}>
                 <button 
                   className="btn-primary" 
                   onClick={handleGenerate}
-                  disabled={!photo || selectedFashionIds.length === 0 || !apiKey || isGenerating}
-                  style={{ width: '100%', maxWidth: '320px', padding: '18px' }}
+                  disabled={!photo || selectedFashionIds.length === 0 || isGenerating}
                 >
-                  <Sparkles size={18} /> GENERATE PFP
+                  <Sparkles size={18} /> Generate PFP
                 </button>
               </div>
             </div>
@@ -177,10 +211,10 @@ function App() {
       </main>
 
       {/* ── Footer ── */}
-      <footer style={{ borderTop: '1px solid var(--card-border)', padding: '32px 0', marginTop: '60px' }}>
-        <div className="container" style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+      <footer className="footer">
+        <div className="container footer-inner">
           <span>© 2026 Ask June AI. All rights reserved.</span>
-          <span>Powered by June AI Inference</span>
+          <span>OpenGradient / June AI Inference</span>
         </div>
       </footer>
     </>
